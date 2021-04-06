@@ -198,10 +198,14 @@ func (c *gitlabClient) CreateRelease(ctx *context.Context, body string) (release
 		return "", err
 	}
 
-	projectID := ctx.Config.Release.GitLab.Owner + "%2F" + ctx.Config.Release.GitLab.Name
+	projectID := ctx.Config.Release.GitLab.ProjectID
+	if ctx.Config.Release.GitLab.ProjectID == "" {
+		projectID = ctx.Config.Release.GitLab.Owner + "%2F" + ctx.Config.Release.GitLab.Name
+	}
 	log.WithFields(log.Fields{
-		"owner": ctx.Config.Release.GitLab.Owner,
-		"name":  ctx.Config.Release.GitLab.Name,
+		"owner": 		ctx.Config.Release.GitLab.Owner,
+		"name":  		ctx.Config.Release.GitLab.Name,
+		"projectID": 	ctx.Config.Release.GitLab.ProjectID,
 	}).Debug("projectID")
 
 	name := title
@@ -264,12 +268,20 @@ func (c *gitlabClient) CreateRelease(ctx *context.Context, body string) (release
 }
 
 func (c *gitlabClient) ReleaseURLTemplate(ctx *context.Context) (string, error) {
-	return fmt.Sprintf(
-		"%s/%s/%s/uploads/{{ .ArtifactUploadHash }}/{{ .ArtifactName }}",
-		ctx.Config.GitLabURLs.Download,
-		ctx.Config.Release.GitLab.Owner,
-		ctx.Config.Release.GitLab.Name,
-	), nil
+	if ctx.Config.Release.GitLab.ProjectID != "" {
+		return fmt.Sprintf(
+			"%s/%s/uploads/{{ .ArtifactUploadHash }}/{{ .ArtifactName }}",
+			ctx.Config.GitLabURLs.Download,
+			ctx.Config.Release.GitLab.ProjectID,
+		), nil
+	}else {
+		return fmt.Sprintf(
+			"%s/%s/%s/uploads/{{ .ArtifactUploadHash }}/{{ .ArtifactName }}",
+			ctx.Config.GitLabURLs.Download,
+			ctx.Config.Release.GitLab.Owner,
+			ctx.Config.Release.GitLab.Name,
+		), nil
+	}
 }
 
 // Upload uploads a file into a release repository.
@@ -279,7 +291,11 @@ func (c *gitlabClient) Upload(
 	artifact *artifact.Artifact,
 	file *os.File,
 ) error {
-	projectID := ctx.Config.Release.GitLab.Owner + "%2F" + ctx.Config.Release.GitLab.Name
+
+	projectID := ctx.Config.Release.GitLab.ProjectID
+	if  projectID != "" {
+		projectID = ctx.Config.Release.GitLab.Owner + "%2F" + ctx.Config.Release.GitLab.Name
+	}
 
 	log.WithField("file", file.Name()).Debug("uploading file")
 	projectFile, _, err := c.client.Projects.UploadFile(

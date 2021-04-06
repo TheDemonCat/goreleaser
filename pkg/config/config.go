@@ -38,8 +38,9 @@ type GiteaURLs struct {
 // Repo represents any kind of repo (github, gitlab, etc).
 // to upload releases into.
 type Repo struct {
-	Owner string `yaml:",omitempty"`
-	Name  string `yaml:",omitempty"`
+	Owner 		string `yaml:",omitempty"`
+	Name  		string `yaml:",omitempty"`
+	ProjectID	string `yaml:",omitempty"`
 }
 
 // RepoRef represents any kind of repo which may differ
